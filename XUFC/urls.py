@@ -16,8 +16,10 @@ Including another URLconf
 """
 from django.urls import path, include
 from FC import views as fc_views
+from django.shortcuts import redirect
 
 urlpatterns = [
+    path('', lambda request: redirect('admin/xu-faculty-clearance/dashboard/'), name='root'),
     path('admin/xu-faculty-clearance/', include('FC.urls')),
     path('accounts/login/google/', fc_views.google_oauth_start, name='google_oauth_start'),
     path('accounts/login/google/callback/', fc_views.google_oauth_callback, name='google_oauth_callback'),

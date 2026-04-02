@@ -16,6 +16,7 @@ echo "Creating database ${DB_NAME} if it doesn't exist..."
 mysql -h "${DB_HOST}" -u "${DB_USER}" -p"${DB_PASSWORD}" --ssl=0 -e "CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>/dev/null || echo "Database creation failed or already exists"
 
 python manage.py collectstatic --noinput
+python manage.py makemigrations --noinput
 until python manage.py migrate --noinput; do
   echo "Django migration failed because database is not fully ready - retrying in 2 seconds..."
   sleep 2
@@ -1226,14 +1227,6 @@ WHERE NOT EXISTS (
 
 EOF
 
-echo "Database initialized."
+echo "Database initialized. Starting Gunicorn..."
 
-# Start the application using Gunicorn
-exec gunicorn XUFC.wsgi:application \
-    --bind 0.0.0.0:8001 \
-    --workers 3 \
-    --timeout 120 \
-    --max-requests 1000 \
-    --max-requests-jitter 50 \
-    --access-logfile - \
-    --error-logfile -
+exec gunicorn --bind 0.0.0.0:8001 --workers 3 --timeout 120 --access-logfile - --error-logfile - --log-level debug --worker-class gevent XUFC.wsgi:application
