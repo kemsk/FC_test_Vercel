@@ -1,0 +1,42 @@
+{
+  "name": "Faculty Clearance System",
+  "short_name": "FacultyClear",
+  "description": "Faculty clearance management system for BoysenBuddies",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/Pen Swish White_FacultyClearTrack.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/Pen Swish White_FacultyClearTrack.png",
+      "sizes": "1920x1920",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/RemoveBG_Logomark.png",
+      "sizes": "400x346",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/Pen Swish White_FacultyClearTrack.png",
+      "sizes": "1920x1920",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Faculty Clearance System Dashboard"
+    }
+  ],
+  "categories": ["education", "productivity", "business"],
+  "lang": "en"
+}
