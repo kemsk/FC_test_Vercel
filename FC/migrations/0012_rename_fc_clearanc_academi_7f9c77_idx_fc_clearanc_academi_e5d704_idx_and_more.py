@@ -20,34 +20,38 @@ def rename_indexes_if_present(apps, schema_editor):
     with connection.cursor() as cursor:
         for table_name, old_name, new_name in rename_map:
             if vendor == "mysql":
-                cursor.execute(
-                    """
-                    SELECT 1
-                    FROM information_schema.statistics
-                    WHERE table_schema = DATABASE()
-                      AND table_name = %s
-                      AND index_name = %s
-                    LIMIT 1
-                    """,
-                    [table_name, old_name],
-                )
-                old_exists = cursor.fetchone() is not None
-                cursor.execute(
-                    """
-                    SELECT 1
-                    FROM information_schema.statistics
-                    WHERE table_schema = DATABASE()
-                      AND table_name = %s
-                      AND index_name = %s
-                    LIMIT 1
-                    """,
-                    [table_name, new_name],
-                )
-                new_exists = cursor.fetchone() is not None
-                if old_exists and not new_exists:
+                try:
                     cursor.execute(
-                        f"ALTER TABLE `{table_name}` RENAME INDEX `{old_name}` TO `{new_name}`"
+                        """
+                        SELECT 1
+                        FROM information_schema.statistics
+                        WHERE table_schema = DATABASE()
+                          AND table_name = %s
+                          AND index_name = %s
+                        LIMIT 1
+                        """,
+                        [table_name, old_name],
                     )
+                    old_exists = cursor.fetchone() is not None
+                    cursor.execute(
+                        """
+                        SELECT 1
+                        FROM information_schema.statistics
+                        WHERE table_schema = DATABASE()
+                          AND table_name = %s
+                          AND index_name = %s
+                        LIMIT 1
+                        """,
+                        [table_name, new_name],
+                    )
+                    new_exists = cursor.fetchone() is not None
+                    if old_exists and not new_exists:
+                        cursor.execute(
+                            f"ALTER TABLE `{table_name}` RENAME INDEX `{old_name}` TO `{new_name}`"
+                        )
+                except Exception as e:
+                    print(f"Warning: Could not rename index {old_name} to {new_name}: {e}")
+                    continue
 
 
 def rename_indexes_if_present_reverse(apps, schema_editor):
@@ -66,34 +70,38 @@ def rename_indexes_if_present_reverse(apps, schema_editor):
     with connection.cursor() as cursor:
         for table_name, old_name, new_name in rename_map:
             if vendor == "mysql":
-                cursor.execute(
-                    """
-                    SELECT 1
-                    FROM information_schema.statistics
-                    WHERE table_schema = DATABASE()
-                      AND table_name = %s
-                      AND index_name = %s
-                    LIMIT 1
-                    """,
-                    [table_name, old_name],
-                )
-                old_exists = cursor.fetchone() is not None
-                cursor.execute(
-                    """
-                    SELECT 1
-                    FROM information_schema.statistics
-                    WHERE table_schema = DATABASE()
-                      AND table_name = %s
-                      AND index_name = %s
-                    LIMIT 1
-                    """,
-                    [table_name, new_name],
-                )
-                new_exists = cursor.fetchone() is not None
-                if old_exists and not new_exists:
+                try:
                     cursor.execute(
-                        f"ALTER TABLE `{table_name}` RENAME INDEX `{old_name}` TO `{new_name}`"
+                        """
+                        SELECT 1
+                        FROM information_schema.statistics
+                        WHERE table_schema = DATABASE()
+                          AND table_name = %s
+                          AND index_name = %s
+                        LIMIT 1
+                        """,
+                        [table_name, old_name],
                     )
+                    old_exists = cursor.fetchone() is not None
+                    cursor.execute(
+                        """
+                        SELECT 1
+                        FROM information_schema.statistics
+                        WHERE table_schema = DATABASE()
+                          AND table_name = %s
+                          AND index_name = %s
+                        LIMIT 1
+                        """,
+                        [table_name, new_name],
+                    )
+                    new_exists = cursor.fetchone() is not None
+                    if old_exists and not new_exists:
+                        cursor.execute(
+                            f"ALTER TABLE `{table_name}` RENAME INDEX `{old_name}` TO `{new_name}`"
+                        )
+                except Exception as e:
+                    print(f"Warning: Could not rename index {old_name} to {new_name}: {e}")
+                    continue
 
 
 class Migration(migrations.Migration):
