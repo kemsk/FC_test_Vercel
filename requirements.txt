@@ -18,6 +18,7 @@ sqlparse==0.5.3
 tabula-py==2.10.0
 tzdata==2025.1
 Django==5.1.4
+mysqlclient==2.2.4
 PyJWT==2.8.0
 google-auth==2.40.1
 requests==2.31.0
