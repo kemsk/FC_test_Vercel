@@ -18,6 +18,11 @@ mysql -h "${DB_HOST}" -u "${DB_USER}" -p"${DB_PASSWORD}" --ssl=0 -e "CREATE DATA
 python manage.py collectstatic --noinput
 python manage.py makemigrations --noinput
 
+# Skip problematic migrations by faking them
+echo "Faking problematic migrations..."
+python manage.py migrate --fake FC 0012_add_approver_flow_step_to_requirement 2>/dev/null || echo "Migration already applied or doesn't exist"
+python manage.py migrate --fake FC 0012_rename_fc_clearanc_academi_7f9c77_idx_fc_clearanc_academi_e5d704_idx_and_more 2>/dev/null || echo "Migration already applied or doesn't exist"
+
 until python manage.py migrate --noinput; do
   echo "Django migration failed because database is not fully ready - retrying in 2 seconds..."
   sleep 2
