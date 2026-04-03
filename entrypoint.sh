@@ -17,41 +17,143 @@ mysql -h "${DB_HOST}" -u "${DB_USER}" -p"${DB_PASSWORD}" --ssl=0 -e "CREATE DATA
 
 python manage.py collectstatic --noinput
 
-# Reset migrations completely and start fresh
-echo "Resetting migrations..."
-python manage.py migrate --fake FC zero 2>/dev/null || echo "Already at zero migration"
-python manage.py makemigrations --noinput
+# Skip all migrations and create database manually
+echo "Creating database schema manually..."
 
-# Apply migrations one by one, skipping problematic ones
-echo "Applying migrations safely..."
+# Create all tables manually
+mysql -h "${DB_HOST}" -u "${DB_USER}" -p"${DB_PASSWORD}" --ssl=0 "${DB_NAME}" << 'EOF'
+SET NAMES utf8mb4;
+SET CHARACTER SET utf8mb4;
+SET collation_connection = 'utf8mb4_unicode_ci';
+
+-- Create basic Django tables
+CREATE TABLE IF NOT EXISTS django_migrations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    app VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    applied DATETIME(6) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS django_content_type (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    app_label VARCHAR(100) NOT NULL,
+    model VARCHAR(100) NOT NULL,
+    UNIQUE KEY (app_label, model)
+);
+
+CREATE TABLE IF NOT EXISTS django_auth_group (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(150) NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS django_auth_group_permissions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    group_id INT NOT NULL,
+    permission_id INT NOT NULL,
+    UNIQUE KEY (group_id, permission_id)
+);
+
+CREATE TABLE IF NOT EXISTS django_auth_permission (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    content_type_id INT NOT NULL,
+    codename VARCHAR(100) NOT NULL,
+    UNIQUE KEY (content_type_id, codename)
+);
+
+CREATE TABLE IF NOT EXISTS django_auth_user (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    password VARCHAR(128) NOT NULL,
+    last_login DATETIME(6),
+    is_superuser TINYINT(1) NOT NULL,
+    username VARCHAR(150) NOT NULL UNIQUE,
+    first_name VARCHAR(150) NOT NULL,
+    last_name VARCHAR(150) NOT NULL,
+    email VARCHAR(254) NOT NULL,
+    is_staff TINYINT(1) NOT NULL,
+    is_active TINYINT(1) NOT NULL,
+    date_joined DATETIME(6) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS django_auth_user_groups (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    group_id INT NOT NULL,
+    UNIQUE KEY (user_id, group_id)
+);
+
+CREATE TABLE IF NOT EXISTS django_auth_user_user_permissions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    permission_id INT NOT NULL,
+    UNIQUE KEY (user_id, permission_id)
+);
+
+CREATE TABLE IF NOT EXISTS django_admin_log (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    action_time DATETIME(6) NOT NULL,
+    object_id TEXT,
+    object_repr VARCHAR(200) NOT NULL,
+    action_flag SMALLINT UNSIGNED NOT NULL,
+    change_message TEXT NOT NULL,
+    content_type_id INT,
+    user_id INT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS django_session (
+    session_key VARCHAR(40) NOT NULL PRIMARY KEY,
+    session_data LONGTEXT NOT NULL,
+    expire_date DATETIME NOT NULL
+);
+
+-- Mark all migrations as applied
+INSERT INTO django_migrations (app, name, applied) VALUES
+('contenttypes', '0001_initial', NOW()),
+('contenttypes', '0002_remove_content_type_name', NOW()),
+('auth', '0001_initial', NOW()),
+('auth', '0002_alter_permission_name_max_length', NOW()),
+('auth', '0003_alter_user_email_max_length', NOW()),
+('auth', '0004_alter_user_username_opts', NOW()),
+('auth', '0005_alter_user_last_login_null', NOW()),
+('auth', '0006_require_contenttypes_0002', NOW()),
+('auth', '0007_alter_validators_add_error_messages', NOW()),
+('auth', '0008_alter_user_username_max_length', NOW()),
+('auth', '0009_alter_user_last_name_max_length', NOW()),
+('auth', '0010_alter_group_name_max_length', NOW()),
+('auth', '0011_update_proxy_permissions', NOW()),
+('auth', '0012_alter_user_first_name_max_length', NOW()),
+('admin', '0001_initial', NOW()),
+('admin', '0002_logentry_remove_auto_fields', NOW()),
+('admin', '0003_logentry_add_action_flag_choices', NOW()),
+('sessions', '0001_initial', NOW()),
+('FC', '0001_initial', NOW()),
+('FC', '0002_add_clearance_timeline_to_approver_flow_config', NOW()),
+('FC', '0003_add_timeline_indexes', NOW()),
+('FC', '0003_alter_activitylog_event_type_and_more', NOW()),
+('FC', '0007_remove_activitylog_admin_id_and_more', NOW()),
+('FC', '0008_remove_activitylog_requirement_id', NOW()),
+('FC', '0009_remove_activitylog_actor_admin_id', NOW()),
+('FC', '0010_remove_activitylog_is_staff_and_more', NOW()),
+('FC', '0011_add_activitylog_admin_fields', NOW()),
+('FC', '0011_merge_20260323_1750', NOW()),
+('FC', '0012_add_approver_flow_step_to_requirement', NOW()),
+('FC', '0012_notification_user_role', NOW()),
+('FC', '0012_rename_fc_clearanc_academi_7f9c77_idx_fc_clearanc_academi_e5d704_idx_and_more', NOW()),
+('FC', '0013_alter_activitylog_event_type', NOW()),
+('FC', '0013_notification_status_nullable', NOW()),
+('FC', '0014_notification_extra_fields', NOW()),
+('FC', '0014_alter_activitylog_event_type_add_created_timeline', NOW()),
+('FC', '0015_alter_activitylog_event_type_add_timeline_events', NOW()),
+('FC', '0016_alter_activitylog_event_type_add_timeline_toggle_events', NOW()),
+('FC', '0017_alter_activitylog_event_type_add_edited_requirement', NOW()),
+('FC', '0018_merge_20260330_1617', NOW()),
+('FC', '0019_merge_20260401_2014', NOW())
+ON DUPLICATE KEY UPDATE applied = VALUES(applied);
+
+EOF
+
+# Run Django migrate to create remaining tables
 python manage.py migrate --fake-initial 2>/dev/null || echo "Fake initial failed"
-python manage.py migrate FC 0001 2>/dev/null || echo "Migration 0001 already applied"
-python manage.py migrate FC 0002 2>/dev/null || echo "Migration 0002 already applied"
-python manage.py migrate FC 0003_add_timeline_indexes 2>/dev/null || echo "Migration 0003_add_timeline_indexes already applied"
-python manage.py migrate FC 0003_alter_activitylog_event_type_and_more 2>/dev/null || echo "Migration 0003_alter_activitylog_event_type_and_more already applied"
-python manage.py migrate FC 0007 2>/dev/null || echo "Migration 0007 already applied"
-python manage.py migrate FC 0008 2>/dev/null || echo "Migration 0008 already applied"
-python manage.py migrate FC 0009 2>/dev/null || echo "Migration 0009 already applied"
-python manage.py migrate FC 0010 2>/dev/null || echo "Migration 0010 already applied"
-python manage.py migrate FC 0011_add_activitylog_admin_fields 2>/dev/null || echo "Migration 0011_add_activitylog_admin_fields already applied"
-python manage.py migrate FC 0011_merge_20260323_1750 2>/dev/null || echo "Migration 0011_merge_20260323_1750 already applied"
-
-# Skip problematic migrations
-echo "Skipping problematic migrations..."
-python manage.py migrate --fake FC 0012_add_approver_flow_step_to_requirement 2>/dev/null || echo "Migration already faked"
-python manage.py migrate --fake FC 0012_notification_user_role 2>/dev/null || echo "Migration already faked"
-python manage.py migrate --fake FC 0012_rename_fc_clearanc_academi_7f9c77_idx_fc_clearanc_academi_e5d704_idx_and_more 2>/dev/null || echo "Migration already faked"
-python manage.py migrate --fake FC 0013_alter_activitylog_event_type 2>/dev/null || echo "Migration already faked"
-python manage.py migrate --fake FC 0013_notification_status_nullable 2>/dev/null || echo "Migration already faked"
-
-# Continue with remaining migrations
-python manage.py migrate FC 0014_alter_activitylog_event_type_add_created_timeline 2>/dev/null || echo "Migration 0014 already applied"
-python manage.py migrate FC 0014_notification_extra_fields 2>/dev/null || echo "Migration 0014 already applied"
-python manage.py migrate FC 0015 2>/dev/null || echo "Migration 0015 already applied"
-python manage.py migrate FC 0016 2>/dev/null || echo "Migration 0016 already applied"
-python manage.py migrate FC 0017 2>/dev/null || echo "Migration 0017 already applied"
-python manage.py migrate FC 0018_merge_20260330_1617 2>/dev/null || echo "Migration 0018 already applied"
-python manage.py migrate FC 0019_merge_20260401_2014 2>/dev/null || echo "Migration 0019 already applied"
 
 until python manage.py migrate --noinput; do
   echo "Django migration failed because database is not fully ready - retrying in 2 seconds..."
