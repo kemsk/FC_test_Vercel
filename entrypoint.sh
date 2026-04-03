@@ -97,6 +97,33 @@ SET NAMES utf8mb4;
 SET CHARACTER SET utf8mb4;
 SET collation_connection = 'utf8mb4_unicode_ci';
 
+-- Seed Colleges and Departments first
+INSERT INTO FC_college (id, name, code, created_at)
+VALUES 
+(1, 'College of Computer Studies', 'CCS', NOW()),
+(2, 'College of Engineering', 'COE', NOW()),
+(3, 'College of Arts and Sciences', 'CAS', NOW())
+ON DUPLICATE KEY UPDATE
+    name = VALUES(name),
+    code = VALUES(code);
+
+INSERT INTO FC_department (id, name, code, college_id, created_at)
+VALUES 
+(1, 'Computer Science', 'CS', 1, NOW()),
+(2, 'Information Technology', 'IT', 1, NOW()),
+(3, 'Computer Engineering', 'CE', 2, NOW())
+ON DUPLICATE KEY UPDATE
+    name = VALUES(name),
+    code = VALUES(code),
+    college_id = VALUES(college_id);
+
+-- Set variables for seeding
+SET @ccs_id = 1;
+SET @cs_id = 1;
+SET @it_id = 2;
+SET @ciso_user_id = (SELECT id FROM FC_user WHERE email = '20220024573@my.xu.edu.ph' LIMIT 1);
+SET @approver_user_id = (SELECT id FROM FC_user WHERE email = 'approver.seed@xu.edu.ph' LIMIT 1);
+
 -- Seed Users
 INSERT INTO FC_user (email, university_id, first_name, last_name, created_at)
 VALUES 
