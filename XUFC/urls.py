@@ -17,8 +17,13 @@ Including another URLconf
 from django.urls import path, include
 from FC import views as fc_views
 from django.shortcuts import redirect
+from django.http import JsonResponse
+
+def health_check(request):
+    return JsonResponse({'status': 'healthy', 'message': 'XUFC Django App is running'})
 
 urlpatterns = [
+    path('health/', health_check, name='health_check'),
     path('', lambda request: redirect('admin/xu-faculty-clearance/dashboard/'), name='root'),
     path('admin/xu-faculty-clearance/', include('FC.urls')),
     path('accounts/login/google/', fc_views.google_oauth_start, name='google_oauth_start'),

@@ -33,7 +33,9 @@ def _env_bool(name: str, default: bool = False) -> bool:
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-as&5jz2$03*p=rtk#v1efq7o0&vp#k-=1^w6i8ifn-qvmyq$ii'
 
-CSRF_TRUSTED_ORIGINS = json.loads(os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', '[]'))
+CSRF_TRUSTED_ORIGINS = json.loads(os.environ.get('CSRF_TRUSTED_ORIGINS', '[]'))
+
+CORS_ALLOWED_ORIGINS = json.loads(os.environ.get('CORS_ALLOWED_ORIGINS', '[]'))
 
 GOOGLE_OAUTH_CLIENT_ID = os.environ.get('GOOGLE_OAUTH_CLIENT_ID', '')
 

@@ -1326,4 +1326,4 @@ EOF
 
 echo "Database initialized. Starting Gunicorn..."
 
-exec gunicorn --bind 0.0.0.0:8001 --workers 3 --timeout 120 --access-logfile - --error-logfile - --log-level debug --worker-class gevent XUFC.wsgi:application
+exec gunicorn --bind 0.0.0.0:$PORT --workers 3 --timeout 120 --access-logfile - --error-logfile - --log-level debug --worker-class gevent XUFC.wsgi:application
