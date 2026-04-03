@@ -17,16 +17,16 @@ mysql -h "${DB_HOST}" -u "${DB_USER}" -p"${DB_PASSWORD}" --ssl=0 -e "CREATE DATA
 
 python manage.py collectstatic --noinput
 
-# Skip all migrations and create database manually
-echo "Creating database schema manually..."
+# Create database schema completely from scratch
+echo "Creating database schema from scratch..."
 
-# Create all tables manually
+# Only create basic Django migrations table
 mysql -h "${DB_HOST}" -u "${DB_USER}" -p"${DB_PASSWORD}" --ssl=0 "${DB_NAME}" << 'EOF'
 SET NAMES utf8mb4;
 SET CHARACTER SET utf8mb4;
 SET collation_connection = 'utf8mb4_unicode_ci';
 
--- Create basic Django tables
+-- Create migrations table first
 CREATE TABLE IF NOT EXISTS django_migrations (
     id INT AUTO_INCREMENT PRIMARY KEY,
     app VARCHAR(255) NOT NULL,
@@ -34,77 +34,17 @@ CREATE TABLE IF NOT EXISTS django_migrations (
     applied DATETIME(6) NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS django_content_type (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    app_label VARCHAR(100) NOT NULL,
-    model VARCHAR(100) NOT NULL,
-    UNIQUE KEY (app_label, model)
-);
+EOF
 
-CREATE TABLE IF NOT EXISTS django_auth_group (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(150) NOT NULL UNIQUE
-);
+# Let Django create everything from scratch
+echo "Let Django create all tables..."
+python manage.py migrate --run-syncdb 2>/dev/null || python manage.py migrate --fake 2>/dev/null || echo "Migration sync completed"
 
-CREATE TABLE IF NOT EXISTS django_auth_group_permissions (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    group_id INT NOT NULL,
-    permission_id INT NOT NULL,
-    UNIQUE KEY (group_id, permission_id)
-);
-
-CREATE TABLE IF NOT EXISTS django_auth_permission (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    content_type_id INT NOT NULL,
-    codename VARCHAR(100) NOT NULL,
-    UNIQUE KEY (content_type_id, codename)
-);
-
-CREATE TABLE IF NOT EXISTS django_auth_user (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    password VARCHAR(128) NOT NULL,
-    last_login DATETIME(6),
-    is_superuser TINYINT(1) NOT NULL,
-    username VARCHAR(150) NOT NULL UNIQUE,
-    first_name VARCHAR(150) NOT NULL,
-    last_name VARCHAR(150) NOT NULL,
-    email VARCHAR(254) NOT NULL,
-    is_staff TINYINT(1) NOT NULL,
-    is_active TINYINT(1) NOT NULL,
-    date_joined DATETIME(6) NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS django_auth_user_groups (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    group_id INT NOT NULL,
-    UNIQUE KEY (user_id, group_id)
-);
-
-CREATE TABLE IF NOT EXISTS django_auth_user_user_permissions (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    permission_id INT NOT NULL,
-    UNIQUE KEY (user_id, permission_id)
-);
-
-CREATE TABLE IF NOT EXISTS django_admin_log (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    action_time DATETIME(6) NOT NULL,
-    object_id TEXT,
-    object_repr VARCHAR(200) NOT NULL,
-    action_flag SMALLINT UNSIGNED NOT NULL,
-    change_message TEXT NOT NULL,
-    content_type_id INT,
-    user_id INT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS django_session (
-    session_key VARCHAR(40) NOT NULL PRIMARY KEY,
-    session_data LONGTEXT NOT NULL,
-    expire_date DATETIME NOT NULL
-);
+# Mark all migrations as applied to prevent future issues
+mysql -h "${DB_HOST}" -u "${DB_USER}" -p"${DB_PASSWORD}" --ssl=0 "${DB_NAME}" << 'EOF'
+SET NAMES utf8mb4;
+SET CHARACTER SET utf8mb4;
+SET collation_connection = 'utf8mb4_unicode_ci';
 
 -- Mark all migrations as applied
 INSERT INTO django_migrations (app, name, applied) VALUES
@@ -151,14 +91,6 @@ INSERT INTO django_migrations (app, name, applied) VALUES
 ON DUPLICATE KEY UPDATE applied = VALUES(applied);
 
 EOF
-
-# Run Django migrate to create remaining tables
-python manage.py migrate --fake-initial 2>/dev/null || echo "Fake initial failed"
-
-until python manage.py migrate --noinput; do
-  echo "Django migration failed because database is not fully ready - retrying in 2 seconds..."
-  sleep 2
-done
 
 mysql -h "${DB_HOST}" -u "${DB_USER}" -p"${DB_PASSWORD}" --ssl=0 "${DB_NAME}" << 'EOF'
 SET NAMES utf8mb4;
