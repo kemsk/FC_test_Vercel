@@ -38,6 +38,7 @@ EOF
 
 # Let Django create everything from scratch
 echo "Let Django create all tables..."
+python manage.py makemigrations --noinput 2>/dev/null || echo "Makemigrations completed"
 python manage.py migrate --run-syncdb 2>/dev/null || python manage.py migrate --fake 2>/dev/null || echo "Migration sync completed"
 
 # Mark all migrations as applied to prevent future issues
@@ -98,23 +99,23 @@ SET CHARACTER SET utf8mb4;
 SET collation_connection = 'utf8mb4_unicode_ci';
 
 -- Seed Colleges and Departments first
-INSERT INTO FC_college (id, name, code, created_at)
+INSERT INTO FC_college (id, name, abbreviation, created_at)
 VALUES 
 (1, 'College of Computer Studies', 'CCS', NOW()),
 (2, 'College of Engineering', 'COE', NOW()),
 (3, 'College of Arts and Sciences', 'CAS', NOW())
 ON DUPLICATE KEY UPDATE
     name = VALUES(name),
-    code = VALUES(code);
+    abbreviation = VALUES(abbreviation);
 
-INSERT INTO FC_department (id, name, code, college_id, created_at)
+INSERT INTO FC_department (id, name, abbreviation, college_id, created_at)
 VALUES 
 (1, 'Computer Science', 'CS', 1, NOW()),
 (2, 'Information Technology', 'IT', 1, NOW()),
 (3, 'Computer Engineering', 'CE', 2, NOW())
 ON DUPLICATE KEY UPDATE
     name = VALUES(name),
-    code = VALUES(code),
+    abbreviation = VALUES(abbreviation),
     college_id = VALUES(college_id);
 
 -- Set variables for seeding
